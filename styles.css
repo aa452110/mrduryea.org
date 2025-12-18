@@ -191,14 +191,23 @@ a {
 }
 
 .class-page .back-link {
-  font-size: 0.9rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.6);
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.75);
+  color: rgba(15, 23, 42, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .class-page .back-link:hover {
-  color: rgba(15, 23, 42, 0.85);
+  color: rgba(15, 23, 42, 0.95);
+  border-color: rgba(15, 23, 42, 0.35);
+  transform: translateX(-2px);
 }
 
 .class-page .page-title {
