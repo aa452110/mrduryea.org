@@ -132,44 +132,35 @@ a {
   --accent-glow: rgba(154, 52, 18, 0.28);
 }
 
-.signature-row {
+.profile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 18px;
-  padding: 12px 24px 12px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: var(--shadow);
+  gap: 10px;
+  margin-top: 8px;
 }
 
 .headshot {
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
+  width: 130px;
+  height: 130px;
+  border-radius: 22px;
   object-fit: cover;
   background: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.18);
-}
-
-.signature-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.18);
 }
 
 .signature {
-  height: 42px;
-  width: auto;
+  height: 64px;
+  width: min(360px, 70vw);
+  object-fit: contain;
   display: block;
-  filter: drop-shadow(0 6px 12px rgba(15, 23, 42, 0.2));
+  filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.22));
 }
 
 .signature-caption {
-  font-size: 0.85rem;
-  letter-spacing: 0.16em;
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: rgba(15, 23, 42, 0.7);
 }
@@ -179,14 +170,9 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .signature-row {
-    flex-direction: column;
-    text-align: center;
-    padding: 16px 22px;
-  }
-
-  .signature-block {
-    align-items: center;
+  .headshot {
+    width: 112px;
+    height: 112px;
   }
 }
 
