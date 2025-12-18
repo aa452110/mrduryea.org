@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PowerPoint Guided Notes | Digital Literacy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../styles.css">
+  </head>
+  <body class="class-page assignment-page notes-page">
+    <div class="page">
+      <header class="page-header">
+        <a class="back-link" href="../index.html" aria-label="Back to Digital Literacy" title="Back to Digital Literacy">&larr;</a>
+        <h1 class="page-title">PowerPoint Guided Notes</h1>
+        <p class="page-subtitle">Watch the video, answer every question, then export your JSON for Canvas.</p>
+      </header>
+
+      <div class="notes-shell" aria-live="polite">
+        <div class="notes-track">
+          <section class="notes-slide" data-question="Three Core Design Principles">
+            <h3>Q1. Three Core Design Principles</h3>
+            <p class="prompt">Explain the three basic design principles used to make PowerPoint slides effective. Go beyond naming them and describe how each one affects the audience's understanding. Include at least one example for each principle.</p>
+            <textarea class="notes-input" rows="7" placeholder="Type your answer here..."></textarea>
+            <div class="word-count">0 words</div>
+          </section>
+
+          <section class="notes-slide" data-question="Comparing Two Presentations">
+            <h3>Q2. Comparing Two Presentations</h3>
+            <p class="prompt">Compare a cluttered presentation with a clean, professional one. Describe at least three specific design choices that made the second presentation stronger and explain why each matters.</p>
+            <textarea class="notes-input" rows="7" placeholder="Type your answer here..."></textarea>
+            <div class="word-count">0 words</div>
+          </section>
+
+          <section class="notes-slide" data-question="Duplicating Slides">
+            <h3>Q3. Duplicating Slides</h3>
+            <p class="prompt">Explain how to duplicate a slide in PowerPoint. Include the steps and when duplicating is useful. Give an example of how duplication saves time or keeps a design consistent.</p>
+            <textarea class="notes-input" rows="7" placeholder="Type your answer here..."></textarea>
+            <div class="word-count">0 words</div>
+          </section>
+
+          <section class="notes-slide" data-question="Creating and Renaming Sections">
+            <h3>Q4. Creating and Renaming Sections</h3>
+            <p class="prompt">Describe how to create a new section and rename it. Then explain how sections keep a long presentation organized. Include an example of how you would use sections in a 20-slide report.</p>
+            <textarea class="notes-input" rows="7" placeholder="Type your answer here..."></textarea>
+            <div class="word-count">0 words</div>
+          </section>
+
+          <section class="notes-slide" data-question="Hiding a Slide">
+            <h3>Q5. Hiding a Slide</h3>
+            <p class="prompt">Explain the process for hiding a slide. Describe at least two situations where hiding a slide is helpful and why it can be better than deleting it.</p>
+            <textarea class="notes-input" rows="7" placeholder="Type your answer here..."></textarea>
+            <div class="word-count">0 words</div>
+          </section>
+        </div>
+      </div>
+
+      <div class="notes-controls">
+        <button class="nav-btn" id="prevSlide" type="button" disabled>Previous</button>
+        <span class="slide-indicator" id="slideIndicator">1 / 5</span>
+        <button class="nav-btn" id="nextSlide" type="button">Next</button>
+      </div>
+
+      <section class="export-panel">
+        <div class="export-actions">
+          <button class="nav-btn primary" id="copyJson" type="button" disabled>Copy JSON</button>
+          <span class="export-status" id="exportStatus">Answer all questions to enable export.</span>
+        </div>
+        <textarea class="json-output" id="jsonOutput" readonly aria-label="JSON export"></textarea>
+        <p class="export-note">Paste the JSON into the correct assignment in Canvas.</p>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        var track = document.querySelector(".notes-track");
+        var slides = Array.prototype.slice.call(document.querySelectorAll(".notes-slide"));
+        var prevBtn = document.getElementById("prevSlide");
+        var nextBtn = document.getElementById("nextSlide");
+        var indicator = document.getElementById("slideIndicator");
+        var copyBtn = document.getElementById("copyJson");
+        var output = document.getElementById("jsonOutput");
+        var statusEl = document.getElementById("exportStatus");
+        var index = 0;
+
+        function wordCount(str) {
+          return str.trim().split(/\s+/).filter(Boolean).length;
+        }
+
+        function updateSlide() {
+          track.style.transform = "translateX(-" + index * 100 + "%)";
+          indicator.textContent = (index + 1) + " / " + slides.length;
+          prevBtn.disabled = index === 0;
+          nextBtn.disabled = index === slides.length - 1;
+        }
+
+        function buildExport() {
+          var responses = slides.map(function (slide) {
+            var question = slide.getAttribute("data-question") || "";
+            var input = slide.querySelector(".notes-input");
+            var text = input ? input.value.trim() : "";
+            return {
+              question: question,
+              response: text,
+              wordCount: wordCount(text)
+            };
+          });
+
+          return JSON.stringify({
+            assignment: "PowerPoint Guided Notes",
+            submittedAt: new Date().toISOString(),
+            responses: responses
+          }, null, 2);
+        }
+
+        function allAnswered() {
+          return slides.every(function (slide) {
+            var input = slide.querySelector(".notes-input");
+            return input && input.value.trim().length > 0;
+          });
+        }
+
+        function updateExport() {
+          var json = buildExport();
+          output.value = json;
+          var ready = allAnswered();
+          copyBtn.disabled = !ready;
+          statusEl.textContent = ready
+            ? "Ready to copy and submit."
+            : "Answer all questions to enable export.";
+        }
+
+        function updateCounters() {
+          slides.forEach(function (slide) {
+            var input = slide.querySelector(".notes-input");
+            var counter = slide.querySelector(".word-count");
+            if (!input || !counter) {
+              return;
+            }
+            var count = wordCount(input.value);
+            counter.textContent = count + " words";
+          });
+        }
+
+        prevBtn.addEventListener("click", function () {
+          index = Math.max(0, index - 1);
+          updateSlide();
+        });
+
+        nextBtn.addEventListener("click", function () {
+          index = Math.min(slides.length - 1, index + 1);
+          updateSlide();
+        });
+
+        slides.forEach(function (slide) {
+          var input = slide.querySelector(".notes-input");
+          if (!input) {
+            return;
+          }
+          input.addEventListener("input", function () {
+            updateCounters();
+            updateExport();
+          });
+        });
+
+        copyBtn.addEventListener("click", function () {
+          var json = buildExport();
+          navigator.clipboard.writeText(json).then(function () {
+            statusEl.textContent = "Copied. Paste into Canvas.";
+          }).catch(function () {
+            statusEl.textContent = "Copy failed. Select the text and copy manually.";
+          });
+        });
+
+        updateSlide();
+        updateCounters();
+        updateExport();
+      })();
+    </script>
+  </body>
+</html>
