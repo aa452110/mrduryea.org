@@ -359,7 +359,7 @@ a {
 
 .assignment-page .stepper-nav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -378,8 +378,7 @@ a {
 }
 
 .assignment-page #step-1:checked ~ .stepper-nav label[for="step-1"],
-.assignment-page #step-2:checked ~ .stepper-nav label[for="step-2"],
-.assignment-page #step-3:checked ~ .stepper-nav label[for="step-3"] {
+.assignment-page #step-2:checked ~ .stepper-nav label[for="step-2"] {
   background: rgba(15, 23, 42, 0.92);
   border-color: rgba(15, 23, 42, 0.9);
   color: #fff;
@@ -394,8 +393,7 @@ a {
 }
 
 .assignment-page #step-1:checked ~ .stepper-panels .step-1,
-.assignment-page #step-2:checked ~ .stepper-panels .step-2,
-.assignment-page #step-3:checked ~ .stepper-panels .step-3 {
+.assignment-page #step-2:checked ~ .stepper-panels .step-2 {
   display: block;
 }
 
@@ -427,7 +425,7 @@ a {
 
 .assignment-page .sample-frame img {
   width: 100%;
-  height: 800px;
+  height: 600px;
   object-fit: contain;
   display: block;
   border-radius: 12px;
@@ -471,6 +469,66 @@ a {
   display: inline-block;
 }
 
+.assignment-page .mission-checklist {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.assignment-page .mission-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  font-size: 0.92rem;
+}
+
+.assignment-page .mission-item input {
+  margin-top: 2px;
+  accent-color: #2563eb;
+}
+
+.assignment-page .mission-item input:checked + span {
+  color: rgba(15, 23, 42, 0.55);
+  text-decoration: line-through;
+}
+
+.assignment-page .progress-wrap {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.assignment-page .progress-bar {
+  position: relative;
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+}
+
+.assignment-page .progress-fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+  transition: width 0.2s ease;
+}
+
+.assignment-page .progress-text {
+  font-size: 0.85rem;
+  color: rgba(15, 23, 42, 0.6);
+  min-width: 110px;
+  text-align: right;
+}
+
 .assignment-page .assignment-notes {
   margin-top: 18px;
   display: grid;
@@ -503,6 +561,10 @@ a {
 
 @media (max-width: 720px) {
   .class-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-page .mission-checklist {
     grid-template-columns: 1fr;
   }
 

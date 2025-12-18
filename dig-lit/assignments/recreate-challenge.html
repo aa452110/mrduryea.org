@@ -21,25 +21,71 @@
         <section class="stepper" aria-label="Your mission">
           <input type="radio" name="step" id="step-1" checked>
           <input type="radio" name="step" id="step-2">
-          <input type="radio" name="step" id="step-3">
 
           <div class="stepper-header">
             <h2>Your Mission</h2>
-            <p>Complete the steps in order. Move right as you finish each part.</p>
+            <p>Track each detail as you build the document.</p>
           </div>
 
           <div class="stepper-nav" role="tablist" aria-label="Mission steps">
-            <label for="step-1" role="tab">Step 1</label>
-            <label for="step-2" role="tab">Step 2</label>
-            <label for="step-3" role="tab">Submit</label>
+            <label for="step-1" role="tab">Create</label>
+            <label for="step-2" role="tab">Submit</label>
           </div>
 
           <div class="stepper-panels">
             <section class="step-panel step-1" role="tabpanel">
-              <h3>Step 1: Study the sample</h3>
-              <p>Look closely at spacing, alignments, and formatting details.</p>
+              <h3>Create This Document</h3>
+              <p>Study the sample and rebuild it with precision.</p>
               <div class="sample-frame">
                 <img src="../../img/recreate-challenge-word-image.png" alt="Sample Word document" loading="lazy">
+              </div>
+              <div class="mission-checklist" data-storage="dl-recreate-challenge">
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Centered blue title: Create This Document</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Horizontal line below title</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Paragraph that is left aligned</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Right-aligned paragraph</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>3x3 table with the filled in items</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Shaded box area</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Inserted image with a bold black border</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Double-spaced paragraph with bold + yellow highlight</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Sincerely left justified</span>
+                </label>
+                <label class="mission-item">
+                  <input type="checkbox">
+                  <span>Your name at the end</span>
+                </label>
+              </div>
+              <div class="progress-wrap">
+                <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+                  <div class="progress-fill"></div>
+                </div>
+                <span class="progress-text">0/10 complete</span>
               </div>
               <div class="step-controls">
                 <label class="step-next" for="step-2">Next -></label>
@@ -47,31 +93,12 @@
             </section>
 
             <section class="step-panel step-2" role="tabpanel">
-              <h3>Step 2: Recreate the document</h3>
-              <p>Build your version in Word to match the layout and formatting.</p>
-              <h4>Required elements</h4>
-              <ul>
-                <li>Title at the top of the page</li>
-                <li>Horizontal line under the title</li>
-                <li>Left- and right-aligned paragraphs</li>
-                <li>A table (3x3 or similar)</li>
-                <li>An image (use any placeholder if needed)</li>
-                <li>A shaded text box or highlighted section</li>
-                <li>Content filling the full single page</li>
-              </ul>
-              <div class="step-controls">
-                <label class="step-back" for="step-1"><- Back</label>
-                <label class="step-next" for="step-3">Next -></label>
-              </div>
-            </section>
-
-            <section class="step-panel step-3" role="tabpanel">
               <h3>Submit</h3>
               <p>Save your file as:</p>
               <p class="file-name">Recreate_Word.docx</p>
               <p>Upload it to the correct assignment in Canvas.</p>
               <div class="step-controls">
-                <label class="step-back" for="step-2"><- Back</label>
+                <label class="step-back" for="step-1"><- Back</label>
               </div>
             </section>
           </div>
@@ -92,5 +119,70 @@
         </div>
       </footer>
     </div>
+    <script>
+      (function () {
+        var checklist = document.querySelector(".mission-checklist");
+        if (!checklist) {
+          return;
+        }
+
+        var key = checklist.getAttribute("data-storage") || "mission-checklist";
+        var items = Array.prototype.slice.call(checklist.querySelectorAll("input[type=\"checkbox\"]"));
+        var progressFill = document.querySelector(".progress-fill");
+        var progressText = document.querySelector(".progress-text");
+        var progressBar = document.querySelector(".progress-bar");
+
+        function loadState() {
+          try {
+            return JSON.parse(localStorage.getItem(key) || "[]");
+          } catch (err) {
+            return [];
+          }
+        }
+
+        function saveState() {
+          var state = items.map(function (item) {
+            return item.checked;
+          });
+          try {
+            localStorage.setItem(key, JSON.stringify(state));
+          } catch (err) {
+            return;
+          }
+        }
+
+        function updateProgress() {
+          var total = items.length;
+          var completed = items.filter(function (item) {
+            return item.checked;
+          }).length;
+          var percent = total ? Math.round((completed / total) * 100) : 0;
+
+          if (progressFill) {
+            progressFill.style.width = percent + "%";
+          }
+          if (progressText) {
+            progressText.textContent = completed + "/" + total + " complete";
+          }
+          if (progressBar) {
+            progressBar.setAttribute("aria-valuemax", String(total));
+            progressBar.setAttribute("aria-valuenow", String(completed));
+          }
+        }
+
+        var saved = loadState();
+        items.forEach(function (item, index) {
+          if (saved[index]) {
+            item.checked = true;
+          }
+          item.addEventListener("change", function () {
+            saveState();
+            updateProgress();
+          });
+        });
+
+        updateProgress();
+      })();
+    </script>
   </body>
 </html>
