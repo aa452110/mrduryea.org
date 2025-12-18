@@ -23,6 +23,12 @@ body {
     linear-gradient(180deg, #f7f4ee 0%, #f1f5f9 100%);
 }
 
+body.class-page {
+  display: block;
+  align-items: initial;
+  justify-content: initial;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -169,6 +175,92 @@ a {
   border-radius: 999px;
   box-shadow: 0 8px 16px rgba(15, 23, 42, 0.15);
   pointer-events: none;
+}
+
+.class-page .page {
+  width: min(980px, 92vw);
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+}
+
+.class-page .page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.class-page .back-link {
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.class-page .back-link:hover {
+  color: rgba(15, 23, 42, 0.85);
+}
+
+.class-page .page-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.class-page .page-subtitle {
+  margin: 0;
+  max-width: 60ch;
+  color: rgba(15, 23, 42, 0.7);
+}
+
+.class-page .section-title {
+  margin: 36px 0 16px;
+  font-size: 1.2rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.65);
+}
+
+.class-page .assignment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.class-page .assignment-card {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 140px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.class-page .assignment-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(15, 23, 42, 0.3);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.14);
+}
+
+.class-page .assignment-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.class-page .assignment-meta {
+  font-size: 0.9rem;
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.class-page .assignment-cta {
+  margin-top: auto;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 @media (max-width: 720px) {
