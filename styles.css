@@ -141,7 +141,7 @@ a {
 }
 
 .signature {
-  height: 92px;
+  height: 200px;
   width: min(520px, 78vw);
   object-fit: contain;
   display: block;
