@@ -140,22 +140,12 @@ a {
   margin-top: 8px;
 }
 
-.headshot {
-  width: 130px;
-  height: 130px;
-  border-radius: 22px;
-  object-fit: cover;
-  background: #fff;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.18);
-}
-
 .signature {
-  height: 64px;
-  width: min(360px, 70vw);
+  height: 92px;
+  width: min(520px, 78vw);
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 12px 18px rgba(15, 23, 42, 0.22));
+  filter: drop-shadow(0 16px 22px rgba(15, 23, 42, 0.22));
 }
 
 .signature-caption {
@@ -170,9 +160,8 @@ a {
     grid-template-columns: 1fr;
   }
 
-  .headshot {
-    width: 112px;
-    height: 112px;
+  .signature {
+    height: 78px;
   }
 }
 
