@@ -24,6 +24,7 @@
           <button class="dot" type="button" aria-label="Question 3"></button>
           <button class="dot" type="button" aria-label="Question 4"></button>
           <button class="dot" type="button" aria-label="Question 5"></button>
+          <button class="dot" type="button" aria-label="Export"></button>
         </div>
         <div class="notes-track">
           <section class="notes-slide" data-question="Three Core Design Principles">
@@ -60,23 +61,26 @@
             <textarea class="notes-input" rows="7" placeholder="Type your answer here..."></textarea>
             <div class="word-count">0 words</div>
           </section>
+          <section class="notes-slide notes-export">
+            <h3>Export</h3>
+            <p class="prompt">Copy your JSON and paste it into the correct assignment in Canvas.</p>
+            <div class="export-panel">
+              <div class="export-actions">
+                <button class="nav-btn primary" id="copyJson" type="button" disabled>Copy JSON</button>
+                <span class="export-status" id="exportStatus">Answer all questions to enable export.</span>
+              </div>
+              <textarea class="json-output" id="jsonOutput" readonly aria-label="JSON export"></textarea>
+              <p class="export-note">Paste the JSON into the correct assignment in Canvas.</p>
+            </div>
+          </section>
         </div>
       </div>
 
       <div class="notes-controls">
         <button class="nav-btn" id="prevSlide" type="button" disabled>Previous</button>
-        <span class="slide-indicator" id="slideIndicator">1 / 5</span>
+        <span class="slide-indicator" id="slideIndicator">1 / 6</span>
         <button class="nav-btn" id="nextSlide" type="button">Next</button>
       </div>
-
-      <section class="export-panel" id="exportPanel">
-        <div class="export-actions">
-          <button class="nav-btn primary" id="copyJson" type="button" disabled>Copy JSON</button>
-          <span class="export-status" id="exportStatus">Answer all questions to enable export.</span>
-        </div>
-        <textarea class="json-output" id="jsonOutput" readonly aria-label="JSON export"></textarea>
-        <p class="export-note">Paste the JSON into the correct assignment in Canvas.</p>
-      </section>
     </div>
 
     <script>
@@ -87,7 +91,6 @@
         var nextBtn = document.getElementById("nextSlide");
         var indicator = document.getElementById("slideIndicator");
         var dots = Array.prototype.slice.call(document.querySelectorAll(".notes-dots .dot"));
-        var exportPanel = document.getElementById("exportPanel");
         var copyBtn = document.getElementById("copyJson");
         var output = document.getElementById("jsonOutput");
         var statusEl = document.getElementById("exportStatus");
@@ -113,13 +116,12 @@
             }
           });
 
-          if (exportPanel) {
-            exportPanel.style.display = index === slides.length - 1 ? "grid" : "none";
-          }
         }
 
         function buildExport() {
-          var responses = slides.map(function (slide) {
+          var responses = slides.filter(function (slide) {
+            return slide.hasAttribute("data-question");
+          }).map(function (slide) {
             var question = slide.getAttribute("data-question") || "";
             var input = slide.querySelector(".notes-input");
             var text = input ? input.value.trim() : "";
@@ -138,9 +140,9 @@
         }
 
         function allAnswered() {
-          return slides.every(function (slide) {
-            var input = slide.querySelector(".notes-input");
-            return input && input.value.trim().length > 0;
+          var inputs = Array.prototype.slice.call(document.querySelectorAll(".notes-input"));
+          return inputs.every(function (input) {
+            return input.value.trim().length > 0;
           });
         }
 
@@ -203,9 +205,6 @@
           });
         });
 
-        if (exportPanel) {
-          exportPanel.style.display = "none";
-        }
         updateSlide();
         updateCounters();
         updateExport();
