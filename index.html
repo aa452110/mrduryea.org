@@ -4,44 +4,103 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Mr. Duryea | Class Hub</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; color: #222; }
-      header { margin-bottom: 24px; }
-      h1 { margin: 0 0 8px; }
-      .note { color: #555; }
-      section { margin-top: 24px; }
-      ul { padding-left: 18px; }
-      footer { margin-top: 40px; font-size: 0.9em; color: #666; }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <header>
-      <h1>Mr. Duryea's Class Hub</h1>
-      <p class="note">Welcome! This is the main page for class information, resources, and assignments.</p>
-    </header>
+    <div class="page">
+      <header class="site-header">
+        <div class="brand">
+          <div class="logo">MD</div>
+          <div class="brand-text">
+            <p class="eyebrow">Mr. Duryea</p>
+            <h1>Class Hub</h1>
+          </div>
+        </div>
+        <nav class="site-nav">
+          <a href="#classes">Classes</a>
+          <a href="#how">How it works</a>
+        </nav>
+      </header>
 
-    <section>
-      <h2>Classes</h2>
-      <ul>
-        <li>Class A (details coming soon)</li>
-        <li>Class B (details coming soon)</li>
-        <li>Class C (details coming soon)</li>
-      </ul>
-    </section>
+      <main>
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="kicker">Student Portal</p>
+            <h2>Choose your class and jump into the weekly plan, assignments, and resources.</h2>
+            <p class="lead">This hub is the launch point for every course. Each class page will hold the syllabus, calendar, and links you need to stay on track.</p>
+            <div class="hero-actions">
+              <a class="btn primary" href="#classes">Browse classes</a>
+              <a class="btn secondary" href="#how">How it works</a>
+            </div>
+          </div>
+          <div class="hero-panel">
+            <h3>What you will find</h3>
+            <ul class="checklist">
+              <li>Weekly agenda and learning targets</li>
+              <li>Assignment details and due dates</li>
+              <li>Slides, handouts, and tutorials</li>
+              <li>Project milestones and rubrics</li>
+            </ul>
+            <p class="panel-note">Start by choosing your course below.</p>
+          </div>
+        </section>
 
-    <section>
-      <h2>Assignments</h2>
-      <p>Check back for weekly assignments and due dates.</p>
-    </section>
+        <section id="classes" class="section classes">
+          <div class="section-head">
+            <h2>Choose your class</h2>
+            <p>Each card takes you to the class home page.</p>
+          </div>
+          <div class="class-grid">
+            <a class="class-card accent-ecs" href="classes/exploring-computer-science/">
+              <span class="card-title">Exploring Computer Science</span>
+              <p>Foundations, impact, and problem solving with computing.</p>
+              <span class="card-cta">Go to class page</span>
+            </a>
+            <a class="class-card accent-web" href="classes/web-development/">
+              <span class="card-title">Web Development</span>
+              <p>HTML, CSS, JavaScript, and full project builds.</p>
+              <span class="card-cta">Go to class page</span>
+            </a>
+            <a class="class-card accent-lit" href="classes/digital-literacy/">
+              <span class="card-title">Digital Literacy</span>
+              <p>Research skills, productivity tools, and smart tech habits.</p>
+              <span class="card-cta">Go to class page</span>
+            </a>
+            <a class="class-card accent-python" href="classes/intro-to-python/">
+              <span class="card-title">Intro to Python</span>
+              <p>Core programming concepts with hands-on practice.</p>
+              <span class="card-cta">Go to class page</span>
+            </a>
+          </div>
+        </section>
 
-    <section>
-      <h2>Resources</h2>
-      <p>Handouts, links, and helpful materials will be posted here.</p>
-    </section>
+        <section id="how" class="section info">
+          <div class="info-grid">
+            <div class="info-card">
+              <h3>Weekly rhythm</h3>
+              <p>Every class page posts the agenda and assignments for the week.</p>
+            </div>
+            <div class="info-card">
+              <h3>Everything in one place</h3>
+              <p>Links, files, and rubrics live on the class page for easy access.</p>
+            </div>
+            <div class="info-card">
+              <h3>Check in often</h3>
+              <p>Updates roll in as projects launch and assessments open.</p>
+            </div>
+          </div>
+        </section>
+      </main>
 
-    <footer>
-      <p>Last updated: <span id="last-updated"></span></p>
-    </footer>
+      <footer class="site-footer">
+        <span>Last updated: <span id="last-updated"></span></span>
+        <span class="footer-sep">|</span>
+        <span>Mr. Duryea</span>
+      </footer>
+    </div>
 
     <script>
       document.getElementById('last-updated').textContent = new Date().toLocaleDateString();
