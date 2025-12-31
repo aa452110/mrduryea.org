@@ -19,7 +19,7 @@
       <header class="page-header">
         <a class="back-link" href="../index.html" aria-label="Back to home" title="Back to home">&larr;</a>
         <h1 class="page-title">Hall Pass Admin</h1>
-        <p class="page-subtitle">Use this if the hall pass gets stuck in use.</p>
+        <p class="page-subtitle">Block the pass when you need to pause usage, or force release if it gets stuck.</p>
       </header>
 
       <section class="admin-panel">
@@ -29,10 +29,11 @@
           <p class="admin-detail" id="adminDetail"></p>
         </div>
         <div class="admin-actions">
+          <button class="hallpass-action ghost" type="button" id="blockToggle">Block Pass</button>
           <button class="hallpass-action primary" type="button" id="forceRelease">Force Release</button>
           <button class="hallpass-action ghost" type="button" id="refreshStatus">Refresh Status</button>
         </div>
-        <p class="admin-note">Only use force release if the pass is stuck or a student forgot to press I'm Back.</p>
+        <p class="admin-note">Block pass turns on the in-use sign and prevents new checkouts until you unblock it. Force release only if the pass is stuck or a student forgot to press I'm Back.</p>
       </section>
     </div>
     <footer class="site-footer">
@@ -48,9 +49,11 @@
       (function () {
         var statusEl = document.getElementById("adminStatus");
         var detailEl = document.getElementById("adminDetail");
+        var blockBtn = document.getElementById("blockToggle");
         var releaseBtn = document.getElementById("forceRelease");
         var refreshBtn = document.getElementById("refreshStatus");
         var refreshTimer = null;
+        var isBlocked = false;
 
         function formatDuration(ms) {
           var totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -68,6 +71,19 @@
           detailEl.textContent = "Elapsed time: " + elapsed;
         }
 
+        function setBlockedState(blocked) {
+          isBlocked = blocked;
+          if (blocked) {
+            blockBtn.textContent = "Unblock Pass";
+            blockBtn.classList.add("primary");
+            blockBtn.classList.remove("ghost");
+          } else {
+            blockBtn.textContent = "Block Pass";
+            blockBtn.classList.add("ghost");
+            blockBtn.classList.remove("primary");
+          }
+        }
+
         async function loadStatus() {
           statusEl.textContent = "Checking...";
           try {
@@ -76,13 +92,23 @@
               throw new Error("Status failed");
             }
             var data = await response.json();
+            var blocked = !!data.blocked || data.status === "blocked";
+            setBlockedState(blocked);
             if (data.status === "in_use") {
-              statusEl.textContent = "In use.";
+              statusEl.textContent = blocked ? "In use (blocked)." : "In use.";
               updateDetail(data.startedAt);
-              if (!refreshTimer) {
-                refreshTimer = window.setInterval(function () {
-                  updateDetail(data.startedAt);
-                }, 1000);
+              if (refreshTimer) {
+                window.clearInterval(refreshTimer);
+              }
+              refreshTimer = window.setInterval(function () {
+                updateDetail(data.startedAt);
+              }, 1000);
+            } else if (blocked) {
+              statusEl.textContent = "Blocked.";
+              updateDetail(null);
+              if (refreshTimer) {
+                window.clearInterval(refreshTimer);
+                refreshTimer = null;
               }
             } else if (data.status === "available") {
               statusEl.textContent = "Available.";
@@ -98,6 +124,29 @@
           } catch (error) {
             statusEl.textContent = "Unable to load status.";
             updateDetail(null);
+          }
+        }
+
+        async function toggleBlock() {
+          blockBtn.disabled = true;
+          statusEl.textContent = isBlocked ? "Unblocking..." : "Blocking...";
+          try {
+            var response = await fetch("/admin/block", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json"
+              },
+              body: JSON.stringify({ action: isBlocked ? "unblock" : "block" })
+            });
+            if (!response.ok) {
+              throw new Error("Block failed");
+            }
+            await response.json();
+            await loadStatus();
+          } catch (error) {
+            statusEl.textContent = "Unable to update block status.";
+          } finally {
+            blockBtn.disabled = false;
           }
         }
 
@@ -122,6 +171,7 @@
         }
 
         refreshBtn.addEventListener("click", loadStatus);
+        blockBtn.addEventListener("click", toggleBlock);
         releaseBtn.addEventListener("click", forceRelease);
         loadStatus();
       })();

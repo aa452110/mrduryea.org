@@ -215,6 +215,10 @@
               showActive(data.startedAt);
               return;
             }
+            if (data.status === "blocked") {
+              setStatus("Hall pass is blocked. Ask Mr. Duryea.", "error");
+              return;
+            }
             if (data.status === "in_use") {
               setStatus("Sorry, it is in use.", "error");
               return;

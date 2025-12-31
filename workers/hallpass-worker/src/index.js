@@ -18,25 +18,35 @@ export class HallPassDurableObject {
 
   async loadState() {
     var stored = await this.state.storage.get(STATE_KEY);
-    return stored || { inUse: false };
+    return stored || { inUse: false, blocked: false };
   }
 
   async saveState(nextState) {
+    if (!nextState.inUse && !nextState.blocked) {
+      await this.state.storage.delete(STATE_KEY);
+      return;
+    }
     await this.state.storage.put(STATE_KEY, nextState);
   }
 
-  async clearState() {
-    await this.state.storage.delete(STATE_KEY);
-  }
-
   buildStatus(state, token) {
-    if (!state.inUse) {
-      return { status: "available" };
+    if (state.inUse) {
+      return {
+        status: "in_use",
+        startedAt: state.startedAt,
+        isHolder: token && token === state.token,
+        blocked: !!state.blocked
+      };
+    }
+    if (state.blocked) {
+      return {
+        status: "blocked",
+        blocked: true
+      };
     }
     return {
-      status: "in_use",
-      startedAt: state.startedAt,
-      isHolder: token && token === state.token
+      status: "available",
+      blocked: false
     };
   }
 
@@ -68,10 +78,14 @@ export class HallPassDurableObject {
     }
 
     if (action === "claim") {
+      if (state.blocked) {
+        return jsonResponse({ status: "blocked", blocked: true });
+      }
       if (state.inUse) {
         return jsonResponse({
           status: "in_use",
-          startedAt: state.startedAt
+          startedAt: state.startedAt,
+          blocked: !!state.blocked
         });
       }
       var newToken = crypto.randomUUID();
@@ -79,35 +93,76 @@ export class HallPassDurableObject {
       await this.saveState({
         inUse: true,
         startedAt: startedAt,
-        token: newToken
+        token: newToken,
+        blocked: false
       });
       return jsonResponse({
         status: "claimed",
         startedAt: startedAt,
-        token: newToken
+        token: newToken,
+        blocked: false
       });
     }
 
     if (action === "release") {
       if (!state.inUse) {
-        return jsonResponse({ status: "available" });
+        return jsonResponse(this.buildStatus(state, token));
       }
       if (token && token === state.token) {
-        await this.clearState();
-        return jsonResponse({ status: "released" });
+        var releasedState = {
+          inUse: false,
+          blocked: !!state.blocked
+        };
+        await this.saveState(releasedState);
+        return jsonResponse({ status: "released", blocked: releasedState.blocked });
       }
       return jsonResponse({
         status: "denied",
-        startedAt: state.startedAt
+        startedAt: state.startedAt,
+        blocked: !!state.blocked
       });
     }
 
     if (action === "force_release") {
       if (!state.inUse) {
-        return jsonResponse({ status: "available" });
+        return jsonResponse(this.buildStatus(state, token));
       }
-      await this.clearState();
-      return jsonResponse({ status: "released", forced: true });
+      var forcedState = {
+        inUse: false,
+        blocked: !!state.blocked
+      };
+      await this.saveState(forcedState);
+      return jsonResponse({ status: "released", forced: true, blocked: forcedState.blocked });
+    }
+
+    if (action === "block") {
+      var blockedState = {
+        inUse: !!state.inUse,
+        blocked: true
+      };
+      if (state.inUse) {
+        blockedState.token = state.token;
+        blockedState.startedAt = state.startedAt;
+      }
+      await this.saveState(blockedState);
+      return jsonResponse({
+        status: blockedState.inUse ? "in_use" : "blocked",
+        startedAt: blockedState.startedAt,
+        blocked: true
+      });
+    }
+
+    if (action === "unblock") {
+      var unblockedState = {
+        inUse: !!state.inUse,
+        blocked: false
+      };
+      if (state.inUse) {
+        unblockedState.token = state.token;
+        unblockedState.startedAt = state.startedAt;
+      }
+      await this.saveState(unblockedState);
+      return jsonResponse(this.buildStatus(unblockedState, token));
     }
 
     return jsonResponse({ status: "bad_request" }, 400);
