@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hall Pass Admin | Mr. Duryea</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="../img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../img/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="../img/favicon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="../img/favicon-512.png">
+  </head>
+  <body class="class-page content-page admin-page">
+    <div class="page">
+      <header class="page-header">
+        <a class="back-link" href="../index.html" aria-label="Back to home" title="Back to home">&larr;</a>
+        <h1 class="page-title">Hall Pass Admin</h1>
+        <p class="page-subtitle">Use this if the hall pass gets stuck in use.</p>
+      </header>
+
+      <section class="admin-panel">
+        <div>
+          <h2 class="admin-title">Current Status</h2>
+          <p class="admin-status" id="adminStatus">Checking...</p>
+          <p class="admin-detail" id="adminDetail"></p>
+        </div>
+        <div class="admin-actions">
+          <button class="hallpass-action primary" type="button" id="forceRelease">Force Release</button>
+          <button class="hallpass-action ghost" type="button" id="refreshStatus">Refresh Status</button>
+        </div>
+        <p class="admin-note">Only use force release if the pass is stuck or a student forgot to press I'm Back.</p>
+      </section>
+    </div>
+    <footer class="site-footer">
+      <span class="footer-mark">Mr. Duryea</span>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="../index.html">Home</a>
+        <a href="../about/index.html">About</a>
+        <a href="../privacy/index.html">Privacy</a>
+      </nav>
+    </footer>
+
+    <script>
+      (function () {
+        var statusEl = document.getElementById("adminStatus");
+        var detailEl = document.getElementById("adminDetail");
+        var releaseBtn = document.getElementById("forceRelease");
+        var refreshBtn = document.getElementById("refreshStatus");
+        var refreshTimer = null;
+
+        function formatDuration(ms) {
+          var totalSeconds = Math.max(0, Math.floor(ms / 1000));
+          var minutes = Math.floor(totalSeconds / 60);
+          var seconds = totalSeconds % 60;
+          return minutes + ":" + String(seconds).padStart(2, "0");
+        }
+
+        function updateDetail(startedAt) {
+          if (!startedAt) {
+            detailEl.textContent = "";
+            return;
+          }
+          var elapsed = formatDuration(Date.now() - startedAt);
+          detailEl.textContent = "Elapsed time: " + elapsed;
+        }
+
+        async function loadStatus() {
+          statusEl.textContent = "Checking...";
+          try {
+            var response = await fetch("/api/hallpass");
+            if (!response.ok) {
+              throw new Error("Status failed");
+            }
+            var data = await response.json();
+            if (data.status === "in_use") {
+              statusEl.textContent = "In use.";
+              updateDetail(data.startedAt);
+              if (!refreshTimer) {
+                refreshTimer = window.setInterval(function () {
+                  updateDetail(data.startedAt);
+                }, 1000);
+              }
+            } else if (data.status === "available") {
+              statusEl.textContent = "Available.";
+              updateDetail(null);
+              if (refreshTimer) {
+                window.clearInterval(refreshTimer);
+                refreshTimer = null;
+              }
+            } else {
+              statusEl.textContent = "Unknown status.";
+              updateDetail(null);
+            }
+          } catch (error) {
+            statusEl.textContent = "Unable to load status.";
+            updateDetail(null);
+          }
+        }
+
+        async function forceRelease() {
+          if (!window.confirm("Force release the hall pass? Use only if it is stuck.")) {
+            return;
+          }
+          releaseBtn.disabled = true;
+          statusEl.textContent = "Releasing...";
+          try {
+            var response = await fetch("/admin/release", { method: "POST" });
+            if (!response.ok) {
+              throw new Error("Release failed");
+            }
+            await response.json();
+            await loadStatus();
+          } catch (error) {
+            statusEl.textContent = "Release failed.";
+          } finally {
+            releaseBtn.disabled = false;
+          }
+        }
+
+        refreshBtn.addEventListener("click", loadStatus);
+        releaseBtn.addEventListener("click", forceRelease);
+        loadStatus();
+      })();
+    </script>
+  </body>
+</html>

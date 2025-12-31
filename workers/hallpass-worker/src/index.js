@@ -102,6 +102,14 @@ export class HallPassDurableObject {
       });
     }
 
+    if (action === "force_release") {
+      if (!state.inUse) {
+        return jsonResponse({ status: "available" });
+      }
+      await this.clearState();
+      return jsonResponse({ status: "released", forced: true });
+    }
+
     return jsonResponse({ status: "bad_request" }, 400);
   }
 }
