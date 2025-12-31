@@ -1,0 +1,9 @@
+name = "mrduryea-hallpass"
+main = "src/index.js"
+compatibility_date = "2024-10-01"
+
+durable_objects = { bindings = [{ name = "HALLPASS", class_name = "HallPassDurableObject" }] }
+
+[[migrations]]
+tag = "v1"
+new_classes = ["HallPassDurableObject"]
