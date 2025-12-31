@@ -15,6 +15,30 @@
     <link rel="icon" type="image/png" sizes="512x512" href="img/favicon-512.png">
   </head>
   <body>
+    <div class="hallpass-menu">
+      <button class="hallpass-trigger" type="button">Hall Pass</button>
+    </div>
+    <div class="hallpass-modal" id="hallpassModal" aria-hidden="true">
+      <div class="hallpass-dialog" role="dialog" aria-modal="true" aria-labelledby="hallpassTitle" aria-describedby="hallpassDesc">
+        <h2 id="hallpassTitle">Use the Hall Pass?</h2>
+        <p id="hallpassDesc">Are you sure you want to use the hall pass? If so, press continue, put your phone on Mr. Duryea's desk, and take the hall pass. Be as fast as you can.</p>
+        <p class="hallpass-reminder">Keep this screen open the whole time. Leave your phone on Mr. Duryea's desk.</p>
+        <p class="hallpass-status" id="hallpassStatus" aria-live="polite"></p>
+        <div class="hallpass-actions">
+          <button class="hallpass-action primary" type="button" id="hallpassContinue">Continue</button>
+          <button class="hallpass-action ghost" type="button" id="hallpassCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div class="hallpass-active" id="hallpassActive" aria-hidden="true">
+      <div class="hallpass-active-card">
+        <span class="hallpass-pill">Hall Pass In Use</span>
+        <div class="hallpass-timer" id="hallpassTimer">0:00</div>
+        <p class="hallpass-active-note">Keep this screen open the whole time. Leave your phone on Mr. Duryea's desk.</p>
+        <p class="hallpass-active-status" id="hallpassActiveStatus" aria-live="polite"></p>
+        <button class="hallpass-action primary" type="button" id="hallpassBack">I'm Back</button>
+      </div>
+    </div>
     <main class="gateway" aria-label="Class selection">
       <h1 class="gateway-title">Click Your Class</h1>
       <div class="class-grid">
@@ -38,5 +62,219 @@
         <a href="privacy/index.html">Privacy</a>
       </nav>
     </footer>
+    <script>
+      (function () {
+        var trigger = document.querySelector(".hallpass-trigger");
+        if (!trigger) {
+          return;
+        }
+
+        var modal = document.getElementById("hallpassModal");
+        var statusEl = document.getElementById("hallpassStatus");
+        var continueBtn = document.getElementById("hallpassContinue");
+        var cancelBtn = document.getElementById("hallpassCancel");
+        var activeScreen = document.getElementById("hallpassActive");
+        var timerEl = document.getElementById("hallpassTimer");
+        var activeStatusEl = document.getElementById("hallpassActiveStatus");
+        var backBtn = document.getElementById("hallpassBack");
+
+        var tokenKey = "hallpass_token";
+        var startedKey = "hallpass_started_at";
+        var timerId = null;
+        var activeStart = null;
+
+        function setStatus(message, tone) {
+          statusEl.textContent = message;
+          if (tone) {
+            statusEl.setAttribute("data-tone", tone);
+          } else {
+            statusEl.removeAttribute("data-tone");
+          }
+        }
+
+        function setActiveStatus(message) {
+          activeStatusEl.textContent = message || "";
+        }
+
+        function openModal() {
+          setStatus("");
+          modal.classList.add("is-visible");
+          modal.setAttribute("aria-hidden", "false");
+        }
+
+        function closeModal() {
+          modal.classList.remove("is-visible");
+          modal.setAttribute("aria-hidden", "true");
+        }
+
+        function lockBody(locked) {
+          if (locked) {
+            document.body.classList.add("hallpass-locked");
+          } else {
+            document.body.classList.remove("hallpass-locked");
+          }
+        }
+
+        function formatDuration(ms) {
+          var totalSeconds = Math.max(0, Math.floor(ms / 1000));
+          var minutes = Math.floor(totalSeconds / 60);
+          var seconds = totalSeconds % 60;
+          return minutes + ":" + String(seconds).padStart(2, "0");
+        }
+
+        function renderTimer() {
+          if (!activeStart) {
+            return;
+          }
+          timerEl.textContent = formatDuration(Date.now() - activeStart);
+        }
+
+        function startTimer() {
+          stopTimer();
+          renderTimer();
+          timerId = window.setInterval(renderTimer, 1000);
+        }
+
+        function stopTimer() {
+          if (timerId) {
+            window.clearInterval(timerId);
+            timerId = null;
+          }
+        }
+
+        function handleBeforeUnload(event) {
+          event.preventDefault();
+          event.returnValue = "Hall pass is active. Keep this screen open until you return.";
+          return event.returnValue;
+        }
+
+        function showActive(startedAt) {
+          activeStart = startedAt;
+          activeScreen.classList.add("is-visible");
+          activeScreen.setAttribute("aria-hidden", "false");
+          lockBody(true);
+          setActiveStatus("");
+          startTimer();
+          window.addEventListener("beforeunload", handleBeforeUnload);
+        }
+
+        function hideActive() {
+          activeStart = null;
+          activeScreen.classList.remove("is-visible");
+          activeScreen.setAttribute("aria-hidden", "true");
+          lockBody(false);
+          stopTimer();
+          setActiveStatus("");
+          window.removeEventListener("beforeunload", handleBeforeUnload);
+        }
+
+        function saveSession(token, startedAt) {
+          localStorage.setItem(tokenKey, token);
+          localStorage.setItem(startedKey, String(startedAt));
+        }
+
+        function clearSession() {
+          localStorage.removeItem(tokenKey);
+          localStorage.removeItem(startedKey);
+        }
+
+        function getToken() {
+          return localStorage.getItem(tokenKey);
+        }
+
+        function getStartedAt() {
+          var stored = parseInt(localStorage.getItem(startedKey), 10);
+          return Number.isFinite(stored) ? stored : null;
+        }
+
+        async function postAction(action, token) {
+          var payload = { action: action };
+          if (token) {
+            payload.token = token;
+          }
+          var response = await fetch("/api/hallpass", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+          if (!response.ok) {
+            throw new Error("Request failed");
+          }
+          return response.json();
+        }
+
+        async function claimPass() {
+          setStatus("Checking availability...", "info");
+          try {
+            var data = await postAction("claim");
+            if (data.status === "claimed") {
+              saveSession(data.token, data.startedAt);
+              closeModal();
+              showActive(data.startedAt);
+              return;
+            }
+            if (data.status === "in_use") {
+              setStatus("Sorry, it is in use.", "error");
+              return;
+            }
+            setStatus("Unable to start the hall pass. Try again.", "error");
+          } catch (error) {
+            setStatus("Unable to check the hall pass. Try again.", "error");
+          }
+        }
+
+        async function releasePass() {
+          var token = getToken();
+          if (!token) {
+            setActiveStatus("This pass is not assigned to this device.");
+            return;
+          }
+          setActiveStatus("Releasing...");
+          try {
+            var data = await postAction("release", token);
+            if (data.status === "released" || data.status === "available") {
+              clearSession();
+              hideActive();
+              return;
+            }
+            setActiveStatus("Unable to release. Ask Mr. Duryea.");
+          } catch (error) {
+            setActiveStatus("Network error. Try again.");
+          }
+        }
+
+        async function restoreSession() {
+          var token = getToken();
+          if (!token) {
+            return;
+          }
+          try {
+            var data = await postAction("status", token);
+            if (data.status === "in_use" && data.isHolder) {
+              var start = data.startedAt || getStartedAt() || Date.now();
+              showActive(start);
+            } else {
+              clearSession();
+            }
+          } catch (error) {
+            clearSession();
+          }
+        }
+
+        trigger.addEventListener("click", openModal);
+        cancelBtn.addEventListener("click", closeModal);
+        modal.addEventListener("click", function (event) {
+          if (event.target === modal) {
+            closeModal();
+          }
+        });
+        continueBtn.addEventListener("click", claimPass);
+        backBtn.addEventListener("click", releasePass);
+
+        restoreSession();
+      })();
+    </script>
   </body>
 </html>
