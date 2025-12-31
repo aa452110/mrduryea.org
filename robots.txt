@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mrduryea.org/sitemap.xml

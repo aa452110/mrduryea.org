@@ -14,6 +14,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  gap: 24px;
   font-family: "Space Grotesk", "Noto Sans", sans-serif;
   color: var(--ink);
   background-color: #f4f2ed;
@@ -175,6 +177,75 @@ a {
   border-radius: 999px;
   box-shadow: 0 8px 16px rgba(15, 23, 42, 0.15);
   pointer-events: none;
+}
+
+.content-page .page {
+  display: grid;
+  gap: 24px;
+}
+
+.content-page .content-stack {
+  max-width: 72ch;
+  display: grid;
+  gap: 18px;
+}
+
+.content-page .content-stack p {
+  margin: 0;
+  color: rgba(15, 23, 42, 0.7);
+  line-height: 1.7;
+}
+
+.content-page .content-stack ul {
+  margin: 0;
+  padding-left: 20px;
+  color: rgba(15, 23, 42, 0.7);
+  line-height: 1.7;
+}
+
+.content-page .content-stack li + li {
+  margin-top: 6px;
+}
+
+.content-page .section-title {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  letter-spacing: 0.18em;
+}
+
+.site-footer {
+  width: min(900px, 92vw);
+  margin: 12px auto 32px;
+  padding: 16px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.site-footer .footer-mark {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.7rem;
+}
+
+.site-footer .footer-links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.site-footer a {
+  color: rgba(15, 23, 42, 0.7);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.site-footer a:hover {
+  color: var(--ink);
 }
 
 .class-page .page {
@@ -836,6 +907,15 @@ a {
 
   .signature {
     height: 78px;
+  }
+
+  .site-footer {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .site-footer .footer-links {
+    justify-content: center;
   }
 }
 
