@@ -644,6 +644,67 @@ a {
   color: rgba(15, 23, 42, 0.7);
 }
 
+.notes-page .compare-question {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.notes-page .compare-block {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.notes-page .compare-card {
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  display: grid;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.notes-page .compare-card img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  display: block;
+}
+
+.notes-page .compare-card:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.6);
+  outline-offset: 2px;
+}
+
+.notes-page .compare-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(37, 99, 235, 0.4);
+}
+
+.notes-page .compare-card.selected {
+  border-color: rgba(37, 99, 235, 0.8);
+  box-shadow: 0 16px 26px rgba(37, 99, 235, 0.2);
+}
+
+.notes-page .compare-label {
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.notes-page .compare-status {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(15, 23, 42, 0.6);
+}
+
 .notes-page .notes-input {
   width: 100%;
   resize: vertical;
@@ -767,6 +828,10 @@ a {
 
   .notes-page .notes-controls {
     flex-direction: column;
+  }
+
+  .notes-page .compare-block {
+    grid-template-columns: 1fr;
   }
 
   .signature {

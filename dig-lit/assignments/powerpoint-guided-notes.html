@@ -8,6 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../styles.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="../../img/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../../img/favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../../img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="../../img/favicon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="../../img/favicon-512.png">
   </head>
   <body class="class-page assignment-page notes-page">
     <div class="page">
@@ -29,6 +34,19 @@
         <div class="notes-track">
           <section class="notes-slide" data-question="Three Core Design Principles">
             <h3>Q1. Three Core Design Principles</h3>
+            <p class="prompt">Study the two slides, pick the stronger one, then explain your reasoning.</p>
+            <p class="compare-question">Which slide is better?</p>
+            <div class="compare-block" data-choice="" role="group" aria-label="Choose the better slide">
+              <button class="compare-card" type="button" data-choice="A" aria-pressed="false">
+                <span class="compare-label">Slide A</span>
+                <img src="powerpoint-guided-notes/presentation-bad-1.png" alt="Slide A: cluttered presentation example" loading="lazy">
+              </button>
+              <button class="compare-card" type="button" data-choice="B" aria-pressed="false">
+                <span class="compare-label">Slide B</span>
+                <img src="powerpoint-guided-notes/presentation-good-1.png" alt="Slide B: clean presentation example" loading="lazy">
+              </button>
+            </div>
+            <p class="compare-status" aria-live="polite">No selection yet.</p>
             <p class="prompt">Explain the three basic design principles used to make PowerPoint slides effective. Go beyond naming them and describe how each one affects the audience's understanding. Include at least one example for each principle.</p>
             <textarea class="notes-input" rows="7" placeholder="Type your answer here..."></textarea>
             <div class="word-count">0 words</div>
@@ -94,6 +112,7 @@
         var copyBtn = document.getElementById("copyJson");
         var output = document.getElementById("jsonOutput");
         var statusEl = document.getElementById("exportStatus");
+        var compareBlocks = Array.prototype.slice.call(document.querySelectorAll(".compare-block"));
         var index = 0;
 
         function wordCount(str) {
@@ -125,11 +144,17 @@
             var question = slide.getAttribute("data-question") || "";
             var input = slide.querySelector(".notes-input");
             var text = input ? input.value.trim() : "";
-            return {
+            var compare = slide.querySelector(".compare-block");
+            var choice = compare ? (compare.getAttribute("data-choice") || "") : "";
+            var payload = {
               question: question,
               response: text,
               wordCount: wordCount(text)
             };
+            if (compare) {
+              payload.choice = choice;
+            }
+            return payload;
           });
 
           return JSON.stringify({
@@ -141,9 +166,13 @@
 
         function allAnswered() {
           var inputs = Array.prototype.slice.call(document.querySelectorAll(".notes-input"));
-          return inputs.every(function (input) {
+          var textReady = inputs.every(function (input) {
             return input.value.trim().length > 0;
           });
+          var compareReady = compareBlocks.every(function (block) {
+            return (block.getAttribute("data-choice") || "").length > 0;
+          });
+          return textReady && compareReady;
         }
 
         function updateExport() {
@@ -193,6 +222,27 @@
           input.addEventListener("input", function () {
             updateCounters();
             updateExport();
+          });
+        });
+
+        compareBlocks.forEach(function (block) {
+          var buttons = Array.prototype.slice.call(block.querySelectorAll(".compare-card"));
+          var status = block.closest(".notes-slide").querySelector(".compare-status");
+          buttons.forEach(function (button) {
+            button.addEventListener("click", function () {
+              buttons.forEach(function (other) {
+                other.classList.remove("selected");
+                other.setAttribute("aria-pressed", "false");
+              });
+              button.classList.add("selected");
+              button.setAttribute("aria-pressed", "true");
+              var choice = button.getAttribute("data-choice") || "";
+              block.setAttribute("data-choice", choice);
+              if (status) {
+                status.textContent = "Selected: Slide " + choice;
+              }
+              updateExport();
+            });
           });
         });
 
