@@ -21,8 +21,12 @@
     <div class="hallpass-modal" id="hallpassModal" aria-hidden="true">
       <div class="hallpass-dialog" role="dialog" aria-modal="true" aria-labelledby="hallpassTitle" aria-describedby="hallpassDesc">
         <h2 id="hallpassTitle">Use the Hall Pass?</h2>
-        <p id="hallpassDesc">Are you sure you want to use the hall pass? If so, press continue, put your phone on Mr. Duryea's desk, and take the hall pass. Be as fast as you can.</p>
-        <p class="hallpass-reminder">Keep this screen open the whole time. Leave your phone on Mr. Duryea's desk.</p>
+        <p id="hallpassDesc">Enter your student ID, press continue, then take the hall pass. Be as fast as you can.</p>
+        <p class="hallpass-reminder">Leave this tab open while you are out. When you return, click I'm Back.</p>
+        <label class="hallpass-field" for="hallpassStudentId">
+          <span class="hallpass-field-label">Student ID</span>
+          <input class="hallpass-input" id="hallpassStudentId" inputmode="numeric" autocomplete="off" pattern="[0-9]*" maxlength="12" placeholder="1234567">
+        </label>
         <p class="hallpass-status" id="hallpassStatus" aria-live="polite"></p>
         <div class="hallpass-actions">
           <button class="hallpass-action primary" type="button" id="hallpassContinue">Continue</button>
@@ -34,7 +38,7 @@
       <div class="hallpass-active-card">
         <span class="hallpass-pill">Hall Pass In Use</span>
         <div class="hallpass-timer" id="hallpassTimer">0:00</div>
-        <p class="hallpass-active-note">Keep this screen open the whole time. Leave your phone on Mr. Duryea's desk.</p>
+        <p class="hallpass-active-note">Leave this tab open while you are out. When you return, click I'm Back.</p>
         <p class="hallpass-active-status" id="hallpassActiveStatus" aria-live="polite"></p>
         <button class="hallpass-action primary" type="button" id="hallpassBack">I'm Back</button>
       </div>
@@ -47,10 +51,22 @@
         <a class="class-button accent-lit" href="dig-lit/index.html">Digital Literacy</a>
         <a class="class-button accent-python" href="intro-to-python/index.html">Intro to Python</a>
       </div>
+      <section class="year-progress" aria-label="School year progress">
+        <div class="year-progress-strip">
+          <div class="year-progress-track" id="yearProgressTrack" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="year-progress-fill" id="yearProgressFill"></div>
+            <button class="progress-dot" type="button" data-marker="start" aria-label="Q1 begins"></button>
+            <button class="progress-dot" type="button" data-marker="q2" aria-label="Q2 begins"></button>
+            <button class="progress-dot" type="button" data-marker="q3" aria-label="Q3 begins"></button>
+            <button class="progress-dot" type="button" data-marker="q4" aria-label="Q4 begins"></button>
+            <button class="progress-dot" type="button" data-marker="end" aria-label="Last day"></button>
+            <button class="progress-dot today" type="button" id="todayMarker" aria-label="Today"></button>
+          </div>
+        </div>
+      </section>
       <div class="profile" aria-label="Teacher information">
         <div class="signature-wrap">
           <img class="signature" src="img/brian-duryea-signature.png" alt="Brian Duryea signature">
-          <span class="signature-caption">Mr. Duryea</span>
         </div>
       </div>
     </main>
@@ -71,6 +87,7 @@
 
         var modal = document.getElementById("hallpassModal");
         var statusEl = document.getElementById("hallpassStatus");
+        var studentIdInput = document.getElementById("hallpassStudentId");
         var continueBtn = document.getElementById("hallpassContinue");
         var cancelBtn = document.getElementById("hallpassCancel");
         var activeScreen = document.getElementById("hallpassActive");
@@ -98,8 +115,14 @@
 
         function openModal() {
           setStatus("");
+          if (studentIdInput) {
+            studentIdInput.value = "";
+          }
           modal.classList.add("is-visible");
           modal.setAttribute("aria-hidden", "false");
+          if (studentIdInput) {
+            studentIdInput.focus();
+          }
         }
 
         function closeModal() {
@@ -187,28 +210,69 @@
           return Number.isFinite(stored) ? stored : null;
         }
 
-        async function postAction(action, token) {
+        function isLocalHost() {
+          return (
+            window.location.hostname === "localhost" ||
+            window.location.hostname === "127.0.0.1" ||
+            window.location.hostname === "::1"
+          );
+        }
+
+        async function postAction(action, token, extra) {
           var payload = { action: action };
           if (token) {
             payload.token = token;
           }
-          var response = await fetch("/api/hallpass", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json"
-            },
-            body: JSON.stringify(payload)
-          });
-          if (!response.ok) {
-            throw new Error("Request failed");
+          if (extra) {
+            Object.keys(extra).forEach(function (key) {
+              payload[key] = extra[key];
+            });
           }
-          return response.json();
+          var response = null;
+          try {
+            response = await fetch("/api/hallpass", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json"
+              },
+              body: JSON.stringify(payload)
+            });
+          } catch (error) {
+            var networkError = new Error("Network request failed");
+            networkError.code = "network";
+            throw networkError;
+          }
+
+          var data = null;
+          try {
+            data = await response.json();
+          } catch (error) {
+            data = null;
+          }
+
+          if (!response.ok) {
+            var message = data && data.message ? String(data.message) : "";
+            var requestError = new Error(message || "Request failed");
+            requestError.status = response.status;
+            requestError.payload = data;
+            throw requestError;
+          }
+
+          return data;
         }
 
         async function claimPass() {
+          var studentId = studentIdInput ? studentIdInput.value.trim() : "";
+          if (!/^[0-9]{4,12}$/.test(studentId)) {
+            setStatus("Enter your student ID (numbers only, usually 7 digits).", "error");
+            if (studentIdInput) {
+              studentIdInput.focus();
+            }
+            return;
+          }
           setStatus("Checking availability...", "info");
           try {
-            var data = await postAction("claim");
+            var data = await postAction("claim", null, { studentId: studentId });
             if (data.status === "claimed") {
               saveSession(data.token, data.startedAt);
               closeModal();
@@ -223,8 +287,33 @@
               setStatus("Sorry, it is in use.", "error");
               return;
             }
+            if (data.status === "invalid_student_id") {
+              setStatus("That doesn't look like a student ID. Try again.", "error");
+              if (studentIdInput) {
+                studentIdInput.focus();
+              }
+              return;
+            }
             setStatus("Unable to start the hall pass. Try again.", "error");
           } catch (error) {
+            if (error && error.status === 404) {
+              setStatus(
+                isLocalHost()
+                  ? "Hall pass system is not running on this local server. Use the live site or run Cloudflare Pages dev."
+                  : "Hall pass system is unavailable right now. Ask Mr. Duryea.",
+                "error"
+              );
+              return;
+            }
+
+            if (error && error.status >= 500) {
+              setStatus(
+                isLocalHost() && error.message ? error.message : "Hall pass system is unavailable right now. Ask Mr. Duryea.",
+                "error"
+              );
+              return;
+            }
+
             setStatus("Unable to check the hall pass. Try again.", "error");
           }
         }
@@ -245,6 +334,10 @@
             }
             setActiveStatus("Unable to release. Ask Mr. Duryea.");
           } catch (error) {
+            if (error && error.status === 404) {
+              setActiveStatus(isLocalHost() ? "Hall pass system is not running on this local server." : "Hall pass system is unavailable.");
+              return;
+            }
             setActiveStatus("Network error. Try again.");
           }
         }
@@ -274,10 +367,280 @@
             closeModal();
           }
         });
+        if (studentIdInput) {
+          studentIdInput.addEventListener("keydown", function (event) {
+            if (event.key === "Enter") {
+              claimPass();
+            }
+          });
+        }
         continueBtn.addEventListener("click", claimPass);
         backBtn.addEventListener("click", releasePass);
 
         restoreSession();
+      })();
+    </script>
+    <script>
+      (function () {
+        var track = document.getElementById("yearProgressTrack");
+        if (!track) {
+          return;
+        }
+
+        var timeZone = "America/Denver";
+        var msDay = 24 * 60 * 60 * 1000;
+
+        function parseDate(value) {
+          var parts = value.split("-").map(Number);
+          return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+        }
+
+        function getTodayUtc() {
+          var now = new Date();
+          var parts = new Intl.DateTimeFormat("en-US", {
+            timeZone: timeZone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit"
+          }).formatToParts(now);
+          var map = {};
+          for (var i = 0; i < parts.length; i += 1) {
+            if (parts[i].type !== "literal") {
+              map[parts[i].type] = parts[i].value;
+            }
+          }
+          return new Date(Date.UTC(Number(map.year), Number(map.month) - 1, Number(map.day)));
+        }
+
+        function daysBetween(start, end) {
+          return Math.round((end - start) / msDay);
+        }
+
+        function clamp(value, min, max) {
+          return Math.min(Math.max(value, min), max);
+        }
+
+        function percentBetween(start, end, current) {
+          var total = Math.max(1, daysBetween(start, end));
+          var elapsed = clamp(daysBetween(start, current), 0, total);
+          return Math.round((elapsed / total) * 100);
+        }
+
+        function findPeriod(periods, today) {
+          var current = null;
+          var next = null;
+          var previous = null;
+          for (var i = 0; i < periods.length; i += 1) {
+            var period = periods[i];
+            if (today >= period.start && today <= period.end) {
+              current = period;
+              break;
+            }
+            if (!next && today < period.start) {
+              next = period;
+            }
+            if (today > period.end) {
+              previous = period;
+            }
+          }
+          return { current: current, next: next, previous: previous };
+        }
+
+        var schedule = {
+          label: "2025-2026",
+          start: "2025-08-18",
+          end: "2026-05-22",
+          terms: [
+            { id: "Q1", label: "Q1", start: "2025-08-18", end: "2025-10-15" },
+            { id: "Q2", label: "Q2", start: "2025-10-20", end: "2025-12-19" },
+            { id: "Q3", label: "Q3", start: "2026-01-06", end: "2026-03-09" },
+            { id: "Q4", label: "Q4", start: "2026-03-10", end: "2026-05-22" }
+          ],
+          breaks: [
+            { id: "labor", label: "Labor Day", start: "2025-09-01", end: "2025-09-01" },
+            { id: "fall", label: "Fall Break", start: "2025-10-16", end: "2025-10-17" },
+            { id: "comp-1", label: "Compensation Day", start: "2025-11-26", end: "2025-11-26" },
+            { id: "thanksgiving", label: "Thanksgiving Break", start: "2025-11-27", end: "2025-11-28" },
+            { id: "winter", label: "Winter Break", start: "2025-12-22", end: "2026-01-02" },
+            { id: "pro-jan", label: "Professional Day", start: "2026-01-05", end: "2026-01-05" },
+            { id: "mlk", label: "MLK Day", start: "2026-01-19", end: "2026-01-19" },
+            { id: "pres", label: "President's Day", start: "2026-02-16", end: "2026-02-16" },
+            { id: "pro-mar", label: "Professional Day", start: "2026-03-09", end: "2026-03-09" },
+            { id: "spring", label: "Spring Break", start: "2026-03-30", end: "2026-04-03" },
+            { id: "comp-2", label: "Compensation Day", start: "2026-04-24", end: "2026-04-24" },
+            { id: "memorial", label: "Memorial Day", start: "2026-05-25", end: "2026-05-25" }
+          ]
+        };
+
+        var terms = schedule.terms.map(function (term) {
+          return {
+            id: term.id,
+            label: term.label,
+            start: parseDate(term.start),
+            end: parseDate(term.end)
+          };
+        });
+
+        var yearStart = parseDate(schedule.start);
+        var yearEnd = parseDate(schedule.end);
+        var today = getTodayUtc();
+        var totalDays = Math.max(1, daysBetween(yearStart, yearEnd));
+        var elapsedDays = clamp(daysBetween(yearStart, today), 0, totalDays);
+        var yearPercent = Math.round((elapsedDays / totalDays) * 100);
+
+        var yearFill = document.getElementById("yearProgressFill");
+        if (yearFill) {
+          yearFill.style.width = yearPercent + "%";
+        }
+
+        track.setAttribute("aria-valuenow", String(yearPercent));
+        track.setAttribute("aria-valuetext", "Year " + yearPercent + "% complete");
+
+        var dateFormatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: timeZone,
+          month: "short",
+          day: "numeric",
+          year: "numeric"
+        });
+        var shortFormatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: timeZone,
+          month: "short",
+          day: "numeric"
+        });
+
+        function formatDate(date) {
+          return dateFormatter.format(date);
+        }
+
+        function formatRange(start, end) {
+          var sameYear = start.getUTCFullYear() === end.getUTCFullYear();
+          var startText = sameYear ? shortFormatter.format(start) : formatDate(start);
+          var endText = formatDate(end);
+          return startText + " - " + endText;
+        }
+
+        var markerDates = {
+          start: yearStart,
+          q2: terms[1].start,
+          q3: terms[2].start,
+          q4: terms[3].start,
+          end: yearEnd
+        };
+
+        var markerTooltips = {
+          start: "Q1 begins " + formatDate(yearStart),
+          q2: "Q2 begins " + formatDate(terms[1].start),
+          q3: "Q3 begins " + formatDate(terms[2].start),
+          q4: "Q4 begins " + formatDate(terms[3].start),
+          end: "Last day " + formatDate(yearEnd)
+        };
+
+        var markerEls = track.querySelectorAll("[data-marker]");
+        for (var i = 0; i < markerEls.length; i += 1) {
+          var markerEl = markerEls[i];
+          var key = markerEl.getAttribute("data-marker");
+          var markerDate = markerDates[key];
+          if (!markerDate) {
+            continue;
+          }
+          var markerPos = (daysBetween(yearStart, markerDate) / totalDays) * 100;
+          markerEl.style.setProperty("--marker-pos", markerPos.toFixed(3) + "%");
+          if (markerTooltips[key]) {
+            markerEl.setAttribute("data-tooltip", markerTooltips[key]);
+            markerEl.setAttribute("aria-label", markerTooltips[key]);
+          }
+        }
+
+        var breaks = schedule.breaks.map(function (breakItem) {
+          return {
+            id: breakItem.id,
+            label: breakItem.label,
+            start: parseDate(breakItem.start),
+            end: parseDate(breakItem.end)
+          };
+        });
+
+        var breakFragment = document.createDocumentFragment();
+        for (var b = 0; b < breaks.length; b += 1) {
+          var breakItem = breaks[b];
+          if (breakItem.end < yearStart || breakItem.start > yearEnd) {
+            continue;
+          }
+          var breakStart = breakItem.start < yearStart ? yearStart : breakItem.start;
+          var breakEnd = breakItem.end > yearEnd ? yearEnd : breakItem.end;
+          var breakStartPos = (daysBetween(yearStart, breakStart) / totalDays) * 100;
+          var breakDays = Math.max(1, daysBetween(breakStart, breakEnd) + 1);
+          var breakWidth = Math.max(0.6, (breakDays / totalDays) * 100);
+          var breakEl = document.createElement("button");
+          breakEl.type = "button";
+          breakEl.className = "progress-break";
+          breakEl.style.left = breakStartPos.toFixed(3) + "%";
+          breakEl.style.width = breakWidth.toFixed(3) + "%";
+          var breakTooltip = breakItem.label + " " + formatRange(breakItem.start, breakItem.end);
+          breakEl.setAttribute("data-tooltip", breakTooltip);
+          breakEl.setAttribute("aria-label", breakTooltip);
+          breakFragment.appendChild(breakEl);
+        }
+        track.appendChild(breakFragment);
+
+        var midtermFragment = document.createDocumentFragment();
+        for (var t = 0; t < terms.length; t += 1) {
+          var term = terms[t];
+          var midpoint = new Date(term.start.getTime() + (term.end.getTime() - term.start.getTime()) / 2);
+          var midPos = (daysBetween(yearStart, midpoint) / totalDays) * 100;
+          var tick = document.createElement("button");
+          tick.type = "button";
+          tick.className = "progress-tick";
+          tick.setAttribute("data-direction", t % 2 === 0 ? "up" : "down");
+          tick.style.setProperty("--marker-pos", midPos.toFixed(3) + "%");
+          var tickTooltip = term.label + " midpoint " + formatDate(midpoint);
+          tick.setAttribute("data-tooltip", tickTooltip);
+          tick.setAttribute("aria-label", tickTooltip);
+          midtermFragment.appendChild(tick);
+        }
+        track.appendChild(midtermFragment);
+
+        var todayMarker = document.getElementById("todayMarker");
+        if (todayMarker) {
+          var todayPos = (elapsedDays / totalDays) * 100;
+          todayMarker.style.setProperty("--marker-pos", todayPos.toFixed(3) + "%");
+        }
+
+        var totalWeeks = Math.floor(totalDays / 7) + 1;
+        var weekNumber = 0;
+        if (today >= yearStart && today <= yearEnd) {
+          weekNumber = Math.floor(elapsedDays / 7) + 1;
+        } else if (today > yearEnd) {
+          weekNumber = totalWeeks;
+        }
+
+        var termStatus = findPeriod(terms, today);
+        var termTooltip = "";
+        if (termStatus.current) {
+          var termPercent = percentBetween(termStatus.current.start, termStatus.current.end, today);
+          termTooltip = termStatus.current.label + " " + termPercent + "%";
+        } else if (termStatus.next) {
+          termTooltip = "Break before " + termStatus.next.label;
+        } else if (termStatus.previous) {
+          termTooltip = termStatus.previous.label + " complete";
+        }
+
+        var todayTooltip = "";
+        if (today < yearStart) {
+          todayTooltip = "School year starts " + formatDate(yearStart);
+        } else if (today > yearEnd) {
+          todayTooltip = "School year ended " + formatDate(yearEnd);
+        } else {
+          todayTooltip = "Week " + weekNumber + " of " + totalWeeks;
+          if (termTooltip) {
+            todayTooltip += " | " + termTooltip;
+          }
+          todayTooltip += " | " + formatDate(today);
+        }
+        if (todayMarker) {
+          todayMarker.setAttribute("data-tooltip", todayTooltip);
+          todayMarker.setAttribute("aria-label", todayTooltip);
+        }
       })();
     </script>
   </body>

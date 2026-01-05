@@ -1,4 +1,7 @@
 const STATE_KEY = "hallpass-state";
+const LOG_KEY = "hallpass-log";
+const MAX_LOG_ENTRIES = 300;
+const LOG_RETENTION_MS = 1000 * 60 * 60 * 24 * 30;
 
 function jsonResponse(payload, status) {
   return new Response(JSON.stringify(payload), {
@@ -29,6 +32,31 @@ export class HallPassDurableObject {
     await this.state.storage.put(STATE_KEY, nextState);
   }
 
+  async loadLog() {
+    var stored = await this.state.storage.get(LOG_KEY);
+    return Array.isArray(stored) ? stored : [];
+  }
+
+  pruneLog(entries) {
+    var cutoff = Date.now() - LOG_RETENTION_MS;
+    var pruned = entries.filter(function (entry) {
+      var timestamp = entry.endedAt || entry.startedAt || 0;
+      return timestamp >= cutoff;
+    });
+    if (pruned.length > MAX_LOG_ENTRIES) {
+      pruned = pruned.slice(pruned.length - MAX_LOG_ENTRIES);
+    }
+    return pruned;
+  }
+
+  async appendLog(entry) {
+    var entries = await this.loadLog();
+    entries.push(entry);
+    entries = this.pruneLog(entries);
+    await this.state.storage.put(LOG_KEY, entries);
+    return entries;
+  }
+
   buildStatus(state, token) {
     if (state.inUse) {
       return {
@@ -47,6 +75,42 @@ export class HallPassDurableObject {
     return {
       status: "available",
       blocked: false
+    };
+  }
+
+  buildAdminStatus(state) {
+    var payload = this.buildStatus(state, "");
+    if (state.inUse) {
+      payload.studentId = state.studentId || "";
+    }
+    return payload;
+  }
+
+  buildLogSummary(entries) {
+    var counts = {};
+    var totalDuration = 0;
+
+    entries.forEach(function (entry) {
+      var id = entry.studentId || "";
+      if (id) {
+        counts[id] = (counts[id] || 0) + 1;
+      }
+      totalDuration += Number(entry.durationMs) || 0;
+    });
+
+    var top = Object.keys(counts)
+      .map(function (id) {
+        return { studentId: id, count: counts[id] };
+      })
+      .sort(function (a, b) {
+        return b.count - a.count;
+      })
+      .slice(0, 8);
+
+    return {
+      total: entries.length,
+      averageDurationMs: entries.length ? Math.round(totalDuration / entries.length) : 0,
+      topStudents: top
     };
   }
 
@@ -72,9 +136,27 @@ export class HallPassDurableObject {
 
     var action = payload && payload.action ? String(payload.action) : "";
     var token = payload && payload.token ? String(payload.token) : "";
+    var studentId = payload && payload.studentId ? String(payload.studentId).trim() : "";
 
     if (action === "status") {
       return jsonResponse(this.buildStatus(state, token));
+    }
+
+    if (action === "admin_status") {
+      return jsonResponse(this.buildAdminStatus(state));
+    }
+
+    if (action === "log") {
+      var entries = await this.loadLog();
+      entries = this.pruneLog(entries);
+      if (entries.length) {
+        await this.state.storage.put(LOG_KEY, entries);
+      }
+      return jsonResponse({
+        status: "ok",
+        events: entries,
+        summary: this.buildLogSummary(entries)
+      });
     }
 
     if (action === "claim") {
@@ -88,12 +170,16 @@ export class HallPassDurableObject {
           blocked: !!state.blocked
         });
       }
+      if (!/^[0-9]{4,12}$/.test(studentId)) {
+        return jsonResponse({ status: "invalid_student_id" });
+      }
       var newToken = crypto.randomUUID();
       var startedAt = Date.now();
       await this.saveState({
         inUse: true,
         startedAt: startedAt,
         token: newToken,
+        studentId: studentId,
         blocked: false
       });
       return jsonResponse({
@@ -109,6 +195,15 @@ export class HallPassDurableObject {
         return jsonResponse(this.buildStatus(state, token));
       }
       if (token && token === state.token) {
+        var endedAt = Date.now();
+        await this.appendLog({
+          id: crypto.randomUUID(),
+          studentId: state.studentId || "",
+          startedAt: state.startedAt,
+          endedAt: endedAt,
+          durationMs: Math.max(0, endedAt - (state.startedAt || endedAt)),
+          forced: false
+        });
         var releasedState = {
           inUse: false,
           blocked: !!state.blocked
@@ -127,6 +222,15 @@ export class HallPassDurableObject {
       if (!state.inUse) {
         return jsonResponse(this.buildStatus(state, token));
       }
+      var forcedEndedAt = Date.now();
+      await this.appendLog({
+        id: crypto.randomUUID(),
+        studentId: state.studentId || "",
+        startedAt: state.startedAt,
+        endedAt: forcedEndedAt,
+        durationMs: Math.max(0, forcedEndedAt - (state.startedAt || forcedEndedAt)),
+        forced: true
+      });
       var forcedState = {
         inUse: false,
         blocked: !!state.blocked
@@ -143,6 +247,7 @@ export class HallPassDurableObject {
       if (state.inUse) {
         blockedState.token = state.token;
         blockedState.startedAt = state.startedAt;
+        blockedState.studentId = state.studentId || "";
       }
       await this.saveState(blockedState);
       return jsonResponse({
@@ -160,6 +265,7 @@ export class HallPassDurableObject {
       if (state.inUse) {
         unblockedState.token = state.token;
         unblockedState.startedAt = state.startedAt;
+        unblockedState.studentId = state.studentId || "";
       }
       await this.saveState(unblockedState);
       return jsonResponse(this.buildStatus(unblockedState, token));

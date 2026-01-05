@@ -179,6 +179,130 @@ a {
   pointer-events: none;
 }
 
+.year-progress {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.year-progress-strip {
+  width: min(860px, 100%);
+  margin: 0 auto;
+  padding: 6px 0 2px;
+}
+
+.year-progress-track {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.16);
+  overflow: visible;
+}
+
+.year-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #38bdf8);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.18);
+}
+
+.progress-dot,
+.progress-break,
+.progress-tick {
+  position: absolute;
+  top: 50%;
+  left: var(--marker-pos, 0%);
+  transform: translate(-50%, -50%);
+  display: block;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: help;
+}
+
+.progress-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid #f4f2ed;
+  background: #0f172a;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+  z-index: 3;
+}
+
+.progress-break {
+  height: 70%;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.5);
+  border: 1px solid rgba(34, 197, 94, 0.8);
+  z-index: 2;
+  transform: translateY(-50%);
+}
+
+.progress-tick {
+  width: 2px;
+  height: 18px;
+  border-radius: 999px;
+  background: #0f172a;
+  z-index: 3;
+}
+
+.progress-tick[data-direction="up"] {
+  transform: translate(-50%, -130%);
+}
+
+.progress-tick[data-direction="down"] {
+  transform: translate(-50%, 30%);
+}
+
+.progress-dot::after,
+.progress-break::after,
+.progress-tick::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translate(-50%, -100%) scale(0.96);
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #fff;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.progress-dot:hover::after,
+.progress-dot:focus-visible::after,
+.progress-break:hover::after,
+.progress-break:focus-visible::after,
+.progress-tick:hover::after,
+.progress-tick:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, -120%) scale(1);
+}
+
+.progress-dot:focus-visible,
+.progress-break:focus-visible,
+.progress-tick:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 6px;
+  border-radius: 999px;
+}
+
+.progress-dot.today {
+  width: 14px;
+  height: 14px;
+  border: 3px solid #f4f2ed;
+  background: #1d4ed8;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+  z-index: 4;
+}
+
 .content-page .page {
   display: grid;
   gap: 24px;
@@ -314,6 +438,38 @@ a {
   color: rgba(15, 23, 42, 0.9);
 }
 
+.hallpass-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.hallpass-field-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.65);
+}
+
+.hallpass-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+}
+
+.hallpass-input:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+  border-color: rgba(37, 99, 235, 0.55);
+}
+
 .hallpass-status {
   min-height: 1.2em;
   font-weight: 600;
@@ -441,6 +597,18 @@ body.hallpass-locked {
   }
 }
 
+@media (max-width: 720px) {
+  .year-progress-track {
+    height: 10px;
+  }
+
+  .progress-dot::after,
+  .progress-break::after,
+  .progress-tick::after {
+    font-size: 0.6rem;
+  }
+}
+
 .admin-page .page {
   width: min(860px, 92vw);
   margin: 0 auto;
@@ -454,6 +622,63 @@ body.hallpass-locked {
   box-shadow: var(--shadow);
   display: grid;
   gap: 18px;
+}
+
+.admin-log {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.admin-log-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.75);
+  max-height: 360px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-table th {
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.6);
+  background: rgba(241, 245, 249, 0.65);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.admin-table td {
+  font-size: 0.95rem;
+  color: rgba(15, 23, 42, 0.75);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
 }
 
 .admin-title {
