@@ -13,7 +13,25 @@
     <loc>https://mrduryea.org/expl-comp-sci/</loc>
   </url>
   <url>
+    <loc>https://mrduryea.org/expl-comp-sci/assignments/assignment-1</loc>
+  </url>
+  <url>
+    <loc>https://mrduryea.org/expl-comp-sci/assignments/assignment-2</loc>
+  </url>
+  <url>
+    <loc>https://mrduryea.org/expl-comp-sci/assignments/assignment-3</loc>
+  </url>
+  <url>
     <loc>https://mrduryea.org/web-dev/</loc>
+  </url>
+  <url>
+    <loc>https://mrduryea.org/web-dev/assignments/assignment-1</loc>
+  </url>
+  <url>
+    <loc>https://mrduryea.org/web-dev/assignments/assignment-2</loc>
+  </url>
+  <url>
+    <loc>https://mrduryea.org/web-dev/assignments/assignment-3</loc>
   </url>
   <url>
     <loc>https://mrduryea.org/dig-lit/</loc>
@@ -22,9 +40,18 @@
     <loc>https://mrduryea.org/intro-to-python/</loc>
   </url>
   <url>
-    <loc>https://mrduryea.org/dig-lit/assignments/recreate-challenge.html</loc>
+    <loc>https://mrduryea.org/intro-to-python/assignments/assignment-1</loc>
   </url>
   <url>
-    <loc>https://mrduryea.org/dig-lit/assignments/powerpoint-guided-notes.html</loc>
+    <loc>https://mrduryea.org/intro-to-python/assignments/assignment-2</loc>
+  </url>
+  <url>
+    <loc>https://mrduryea.org/intro-to-python/assignments/assignment-3</loc>
+  </url>
+  <url>
+    <loc>https://mrduryea.org/dig-lit/assignments/recreate-challenge</loc>
+  </url>
+  <url>
+    <loc>https://mrduryea.org/dig-lit/assignments/powerpoint-guided-notes</loc>
   </url>
 </urlset>
