@@ -43,9 +43,9 @@ If you have not deployed it yet, run `wrangler deploy` from that directory first
 - `dig-lit/assignments/recreate-challenge.html` uses localStorage to track checklist progress.
 - `dig-lit/assignments/powerpoint-guided-notes.html` collects responses and exports a JSON payload for Canvas.
 
-## Missing/placeholder pages
+## Placeholder pages
 
-Some class pages link to assignment files that do not exist yet:
+Some assignment pages are currently placeholders (they show a Coming Soon message):
 
 - `expl-comp-sci/assignments/assignment-1.html`
 - `expl-comp-sci/assignments/assignment-2.html`
@@ -56,8 +56,6 @@ Some class pages link to assignment files that do not exist yet:
 - `intro-to-python/assignments/assignment-1.html`
 - `intro-to-python/assignments/assignment-2.html`
 - `intro-to-python/assignments/assignment-3.html`
-- `dig-lit/assignments/assignment-2.html`
-- `dig-lit/assignments/assignment-3.html`
 
 ## Sync mode
 
