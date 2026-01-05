@@ -26,7 +26,6 @@
         <div>
           <h2 class="admin-title">Current Status</h2>
           <p class="admin-status" id="adminStatus">Checking...</p>
-          <p class="admin-detail" id="adminStudent"></p>
           <p class="admin-detail" id="adminDetail"></p>
         </div>
         <div class="admin-actions">
@@ -35,27 +34,6 @@
           <button class="hallpass-action ghost" type="button" id="refreshStatus">Refresh Status</button>
         </div>
         <p class="admin-note">Block pass turns on the in-use sign and prevents new checkouts until you unblock it. Force release only if the pass is stuck or a student forgot to press I'm Back.</p>
-
-        <div class="admin-log" aria-label="Hall pass history">
-          <div class="admin-log-header">
-            <h2 class="admin-title">Recent Checkouts</h2>
-            <button class="hallpass-action ghost" type="button" id="exportCsv">Export CSV</button>
-          </div>
-          <p class="admin-note" id="logSummary">Loading...</p>
-          <div class="admin-table-wrap" role="region" aria-label="Recent hall pass checkouts" tabindex="0">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th scope="col">Student ID</th>
-                  <th scope="col">Start</th>
-                  <th scope="col">Duration</th>
-                  <th scope="col">Released</th>
-                </tr>
-              </thead>
-              <tbody id="logRows"></tbody>
-            </table>
-          </div>
-        </div>
       </section>
     </div>
     <footer class="site-footer">
@@ -71,23 +49,11 @@
       (function () {
         var statusEl = document.getElementById("adminStatus");
         var detailEl = document.getElementById("adminDetail");
-        var studentEl = document.getElementById("adminStudent");
         var blockBtn = document.getElementById("blockToggle");
         var releaseBtn = document.getElementById("forceRelease");
         var refreshBtn = document.getElementById("refreshStatus");
         var refreshTimer = null;
         var isBlocked = false;
-        var logRows = document.getElementById("logRows");
-        var logSummary = document.getElementById("logSummary");
-        var exportBtn = document.getElementById("exportCsv");
-
-        var stampFormatter = new Intl.DateTimeFormat("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "2-digit"
-        });
 
         function formatDuration(ms) {
           var totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -109,13 +75,6 @@
           detailEl.textContent = "Elapsed time: " + elapsed;
         }
 
-        function updateStudent(studentId) {
-          if (!studentEl) {
-            return;
-          }
-          studentEl.textContent = studentId ? "Student ID: " + studentId : "";
-        }
-
         function setBlockedState(blocked) {
           isBlocked = blocked;
           if (blocked) {
@@ -131,7 +90,6 @@
 
         async function loadStatus() {
           statusEl.textContent = "Checking...";
-          updateStudent("");
           try {
             var response = await fetch("/admin/status");
             if (!response.ok) {
@@ -142,7 +100,6 @@
             setBlockedState(blocked);
             if (data.status === "in_use") {
               statusEl.textContent = blocked ? "In use (blocked)." : "In use.";
-              updateStudent(data.studentId || "");
               updateDetail(data.startedAt);
               if (refreshTimer) {
                 window.clearInterval(refreshTimer);
@@ -152,7 +109,6 @@
               }, 1000);
             } else if (blocked) {
               statusEl.textContent = "Blocked.";
-              updateStudent("");
               updateDetail(null);
               if (refreshTimer) {
                 window.clearInterval(refreshTimer);
@@ -160,7 +116,6 @@
               }
             } else if (data.status === "available") {
               statusEl.textContent = "Available.";
-              updateStudent("");
               updateDetail(null);
               if (refreshTimer) {
                 window.clearInterval(refreshTimer);
@@ -168,117 +123,11 @@
               }
             } else {
               statusEl.textContent = "Unknown status.";
-              updateStudent("");
               updateDetail(null);
             }
           } catch (error) {
             statusEl.textContent = "Unable to load status.";
-            updateStudent("");
             updateDetail(null);
-          }
-        }
-
-        function escapeCell(value) {
-          var str = String(value == null ? "" : value);
-          if (/[\",\\n]/.test(str)) {
-            return '\"' + str.replace(/\"/g, '\"\"') + '\"';
-          }
-          return str;
-        }
-
-        function downloadCsv(filename, content) {
-          var blob = new Blob([content], { type: "text/csv;charset=utf-8" });
-          var url = URL.createObjectURL(blob);
-          var link = document.createElement("a");
-          link.href = url;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-
-        function renderLog(events, summary) {
-          if (!logRows) {
-            return;
-          }
-
-          logRows.innerHTML = "";
-          var sorted = Array.isArray(events) ? events.slice() : [];
-          sorted.sort(function (a, b) {
-            return (b.startedAt || 0) - (a.startedAt || 0);
-          });
-
-          sorted.slice(0, 60).forEach(function (entry) {
-            var row = document.createElement("tr");
-
-            var studentCell = document.createElement("td");
-            studentCell.textContent = entry.studentId || "";
-
-            var startCell = document.createElement("td");
-            startCell.textContent = entry.startedAt ? stampFormatter.format(new Date(entry.startedAt)) : "";
-
-            var durationCell = document.createElement("td");
-            durationCell.textContent = formatDuration(entry.durationMs || 0);
-
-            var releasedCell = document.createElement("td");
-            releasedCell.textContent = entry.forced ? "Forced" : "Normal";
-
-            row.appendChild(studentCell);
-            row.appendChild(startCell);
-            row.appendChild(durationCell);
-            row.appendChild(releasedCell);
-            logRows.appendChild(row);
-          });
-
-          if (logSummary) {
-            var top = (summary && Array.isArray(summary.topStudents)) ? summary.topStudents : [];
-            var topText = top.length
-              ? top.map(function (item) {
-                return item.studentId + " (" + item.count + ")";
-              }).join(", ")
-              : "None yet.";
-            var avg = summary ? formatDuration(summary.averageDurationMs || 0) : "0:00";
-            var total = summary ? summary.total : 0;
-            logSummary.textContent = "Saved: " + total + " · Avg: " + avg + " · Most frequent: " + topText;
-          }
-
-          if (exportBtn) {
-            exportBtn.disabled = !sorted.length;
-            exportBtn.onclick = function () {
-              var lines = ["studentId,startedAt,endedAt,durationSeconds,forced"];
-              sorted.forEach(function (entry) {
-                var startedAt = entry.startedAt ? new Date(entry.startedAt).toISOString() : "";
-                var endedAt = entry.endedAt ? new Date(entry.endedAt).toISOString() : "";
-                var durationSeconds = entry.durationMs ? Math.round(entry.durationMs / 1000) : 0;
-                lines.push([
-                  escapeCell(entry.studentId || ""),
-                  escapeCell(startedAt),
-                  escapeCell(endedAt),
-                  escapeCell(durationSeconds),
-                  escapeCell(entry.forced ? "true" : "false")
-                ].join(","));
-              });
-              downloadCsv("hallpass-log.csv", lines.join("\\n"));
-            };
-          }
-        }
-
-        async function loadLog() {
-          if (logSummary) {
-            logSummary.textContent = "Loading...";
-          }
-          try {
-            var response = await fetch("/admin/log");
-            if (!response.ok) {
-              throw new Error("Log failed");
-            }
-            var data = await response.json();
-            renderLog(data.events || [], data.summary || {});
-          } catch (error) {
-            if (logSummary) {
-              logSummary.textContent = "Unable to load history.";
-            }
           }
         }
 
@@ -298,7 +147,6 @@
             }
             await response.json();
             await loadStatus();
-            await loadLog();
           } catch (error) {
             statusEl.textContent = "Unable to update block status.";
           } finally {
@@ -319,7 +167,6 @@
             }
             await response.json();
             await loadStatus();
-            await loadLog();
           } catch (error) {
             statusEl.textContent = "Release failed.";
           } finally {
@@ -329,12 +176,10 @@
 
         refreshBtn.addEventListener("click", function () {
           loadStatus();
-          loadLog();
         });
         blockBtn.addEventListener("click", toggleBlock);
         releaseBtn.addEventListener("click", forceRelease);
         loadStatus();
-        loadLog();
       })();
     </script>
   </body>

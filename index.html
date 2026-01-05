@@ -21,12 +21,8 @@
     <div class="hallpass-modal" id="hallpassModal" aria-hidden="true">
       <div class="hallpass-dialog" role="dialog" aria-modal="true" aria-labelledby="hallpassTitle" aria-describedby="hallpassDesc">
         <h2 id="hallpassTitle">Use the Hall Pass?</h2>
-        <p id="hallpassDesc">Enter your student ID, press continue, then take the hall pass. Be as fast as you can.</p>
+        <p id="hallpassDesc">Press continue, then take the hall pass. Be as fast as you can.</p>
         <p class="hallpass-reminder">Leave this tab open while you are out. When you return, click I'm Back.</p>
-        <label class="hallpass-field" for="hallpassStudentId">
-          <span class="hallpass-field-label">Student ID</span>
-          <input class="hallpass-input" id="hallpassStudentId" inputmode="numeric" autocomplete="off" pattern="[0-9]*" maxlength="12" placeholder="1234567">
-        </label>
         <p class="hallpass-status" id="hallpassStatus" aria-live="polite"></p>
         <div class="hallpass-actions">
           <button class="hallpass-action primary" type="button" id="hallpassContinue">Continue</button>
@@ -87,7 +83,6 @@
 
         var modal = document.getElementById("hallpassModal");
         var statusEl = document.getElementById("hallpassStatus");
-        var studentIdInput = document.getElementById("hallpassStudentId");
         var continueBtn = document.getElementById("hallpassContinue");
         var cancelBtn = document.getElementById("hallpassCancel");
         var activeScreen = document.getElementById("hallpassActive");
@@ -115,14 +110,9 @@
 
         function openModal() {
           setStatus("");
-          if (studentIdInput) {
-            studentIdInput.value = "";
-          }
           modal.classList.add("is-visible");
           modal.setAttribute("aria-hidden", "false");
-          if (studentIdInput) {
-            studentIdInput.focus();
-          }
+          continueBtn.focus();
         }
 
         function closeModal() {
@@ -262,17 +252,9 @@
         }
 
         async function claimPass() {
-          var studentId = studentIdInput ? studentIdInput.value.trim() : "";
-          if (!/^[0-9]{4,12}$/.test(studentId)) {
-            setStatus("Enter your student ID (numbers only, usually 7 digits).", "error");
-            if (studentIdInput) {
-              studentIdInput.focus();
-            }
-            return;
-          }
           setStatus("Checking availability...", "info");
           try {
-            var data = await postAction("claim", null, { studentId: studentId });
+            var data = await postAction("claim");
             if (data.status === "claimed") {
               saveSession(data.token, data.startedAt);
               closeModal();
@@ -285,13 +267,6 @@
             }
             if (data.status === "in_use") {
               setStatus("Sorry, it is in use.", "error");
-              return;
-            }
-            if (data.status === "invalid_student_id") {
-              setStatus("That doesn't look like a student ID. Try again.", "error");
-              if (studentIdInput) {
-                studentIdInput.focus();
-              }
               return;
             }
             setStatus("Unable to start the hall pass. Try again.", "error");
@@ -367,13 +342,6 @@
             closeModal();
           }
         });
-        if (studentIdInput) {
-          studentIdInput.addEventListener("keydown", function (event) {
-            if (event.key === "Enter") {
-              claimPass();
-            }
-          });
-        }
         continueBtn.addEventListener("click", claimPass);
         backBtn.addEventListener("click", releasePass);
 
